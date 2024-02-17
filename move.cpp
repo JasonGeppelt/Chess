@@ -40,27 +40,76 @@ Move::Move(const Position& src, const Position& dest, PieceType promote) :
  **********************************************/
 void Move::complete(const Board& board)
 {
-   // set the capture
-   capture = board[dest].getPieceType();
+    // set the capture
+    capture = board[dest].getPieceType();
 
-   // set the color
-   isWhiteTurn = board[source].getIsWhite();
+    // set the color
+    isWhiteTurn = board[source].getIsWhite();
 
-   // handle if this is a ppromotion
-   if (board[source].getPieceType() == PAWN)
-   {
-       // For white pawns reaching the 8th rank or black pawns reaching the 1st rank
-       if ((isWhiteTurn && dest.getRow() == 0) || (!isWhiteTurn && dest.getRow() == 7))
-       {
-           // Set promotion to QUEEN by default
-           promote = QUEEN;
-       }
-   }
+    // handle if this is a ppromotion
+    if (board[source].getPieceType() == PAWN)
+    {
+        // For white pawns reaching the 8th rank or black pawns reaching the 1st rank
+        if ((isWhiteTurn && dest.getRow() == 0) || (!isWhiteTurn && dest.getRow() == 7))
+        {
+            // Set promotion to QUEEN by default
+            promote = QUEEN;
+        }
+    }
 
-   // handle if this is an en-passant
-   //if (capture == SPACE && board[source].getPieceType() == PAWN)
-   //   enpassant = true;
+    // handle if this is an en-passant
+    if (board[source].getPieceType() == PAWN) {
+        // Check if the move meets the conditions for en passant
+        if (!board.getMoveHistory().empty() && capture == SPACE &&
+            abs(board.getLastMove().getDes().getCol() - source.getCol()) == 1 &&
+            abs(board.getLastMove().getDes().getRow() == source.getRow()) &&
+            abs(board.getLastMove().getSrc().getRow() - source.getRow()) == 2 &&
+            dest.getCol() == board.getLastMove().getDes().getCol())
+        {
+            // Set move as an enpassant
+            enpassant = true;
+        }
+    }
+
+    // handle if this is a castling
+    if (board[source].getPieceType() == KING) {
+        // Check for kingside castling
+        if (dest.getCol() == source.getCol() + 2) {
+            Position rookPos(source.getRow(), 7); // Rook's position for kingside castling
+            if (board[rookPos].getPieceType() == ROOK) {
+                // Check if the squares between the king and the rook are empty
+                bool squaresEmpty = true;
+                for (int col = source.getCol() + 1; col < 7; ++col) {
+                    if (board[Position(source.getRow(), col)].getPieceType() != SPACE) {
+                        squaresEmpty = false;
+                        break;
+                    }
+                }
+                if (squaresEmpty) {
+                    castleK = true; // Set move as a King side Castle
+                }
+            }
+        }
+        // Check for queenside castling
+        else if (dest.getCol() == source.getCol() - 2) {
+            Position rookPos(source.getRow(), 0); // Rook's position for queenside castling
+            if (board[rookPos].getPieceType() == ROOK) {
+                // Check if the squares between the king and the rook are empty
+                bool squaresEmpty = true;
+                for (int col = source.getCol() - 1; col > 0; --col) {
+                    if (board[Position(source.getRow(), col)].getPieceType() != SPACE) {
+                        squaresEmpty = false;
+                        break;
+                    }
+                }
+                if (squaresEmpty) {
+                    castleQ = true; // Set move as a Queen side Castle
+                }
+            }
+        }
+    }
 }
+
 
 /***********************************************
  * MOVE : EQUALITY

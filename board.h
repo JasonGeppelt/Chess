@@ -57,6 +57,7 @@ public:
 		return *board[pos.getRow()][pos.getCol()];
 	}
 	Move getLastMove() const { return moves.back(); }
+	vector<Move> getMoveHistory() const { return moves; }
 
 	// setters
 	void free();

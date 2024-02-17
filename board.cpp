@@ -277,13 +277,7 @@ bool Board::move(const Move& move)
     // Castle King side
     if (move.getCastleK())
     {
-        int row = (move.getWhiteMove() ? 0 : 7);
-
-        // king and rook better be in his position
-        assert(board[row][4]->getLetter() == 'K');
-        assert(board[row][5]->getLetter() == ' ');
-        assert(board[row][6]->getLetter() == ' ');
-        assert(board[row][7]->getLetter() == 'R');
+        int row = (move.getWhiteMove() ? 7 : 0);
 
         // move the king
         src.set(row, 6);
@@ -304,14 +298,7 @@ bool Board::move(const Move& move)
     // Castle Queen side
     else if (move.getCastleQ())
     {
-        int row = (move.getWhiteMove() ? 0 : 7);
-
-        // king and rook better be in his position
-        assert(board[row][4]->getLetter() == 'K');
-        assert(board[row][3]->getLetter() == ' ');
-        assert(board[row][2]->getLetter() == ' ');
-        assert(board[row][1]->getLetter() == ' ');
-        assert(board[row][0]->getLetter() == 'R');
+        int row = (move.getWhiteMove() ? 7 : 0);
 
         // move the king
         src.set(row, 2);
@@ -330,20 +317,16 @@ bool Board::move(const Move& move)
     }
 
     // en-passant
-    else if (move.getEnPassant())
+    else if (!moves.empty() && move.getEnPassant())
     {
-        // target location of the pawn better be empty
-        // The piece beside the pawn better be filled with a pawn
-        assert(board[des.getRow()][des.getCol()]->getLetter() == ' ');
-        assert(board[src.getRow()][src.getCol()]->getLetter() == 'p');
-        assert(board[src.getRow()][des.getCol()]->getLetter() == 'p');
+        // Get the position of the captured pawn
+        Position capturedPawnPos = moves.back().getDes();
 
-        // move the pawn
+        // Remove the captured pawn from the board
+        *this -= capturedPawnPos;
+
+        // Move your pawn to the destination square
         swap(src, des);
-
-        // kill the opponent
-        Position posKill(src.getRow(), des.getCol());
-        *this -= posKill;
 
         // DEBUG 
         cout << "En-passant" << endl;

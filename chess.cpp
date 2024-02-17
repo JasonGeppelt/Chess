@@ -47,11 +47,6 @@ int main(int argc, char** argv)
     Board board(&pgout);
     board.reset(true);
 
-    // DEBUG
-    //else if (board[source].getPieceType() == KING) {
-    //    cout << "THATS A KING" << endl;
-    //}
-
     ui.run(callBack, &board);
 
     return 0;

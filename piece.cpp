@@ -148,6 +148,38 @@ void King::getMoves(set<Move>& possible, const Board& board) const {
             }
         }
     }
+
+    // Check if the squares between the king and the rooks are empty
+    bool canCastleKingSide = board[Position(row, col + 1)].getPieceType() == SPACE &&
+        board[Position(row, col + 2)].getPieceType() == SPACE;
+
+    bool canCastleQueenSide = board[Position(row, col - 1)].getPieceType() == SPACE &&
+        board[Position(row, col - 2)].getPieceType() == SPACE &&
+        board[Position(row, col - 3)].getPieceType() == SPACE;
+
+    // Iterate over adjacent squares and add valid moves
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            if (dr != 0 || dc != 0) { // Exclude the king's current position
+                int newRow = row + dr;
+                int newCol = col + dc;
+                if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                    const Piece* targetPiece = &board[Position(newRow, newCol)];
+                    if (targetPiece->getPieceType() == SPACE || targetPiece->getIsWhite() != isWhite) {
+                        possible.insert(Move(position, Position(newRow, newCol)));
+                    }
+                }
+            }
+        }
+    }
+
+    // Add castling moves if conditions are met
+    if (canCastleKingSide) {
+        possible.insert(Move(position, Position(row, col + 2), KING));
+    }
+    if (canCastleQueenSide) {
+        possible.insert(Move(position, Position(row, col - 2), KING));
+    }
 }
 
 void King::display(ogstream* pgout) const {
@@ -304,42 +336,20 @@ void Pawn::getMoves(set<Move>& possible, const Board& board) const {
         }
     }
 
-    //// En passant capture to the left or right
-    //Position toTheLeft = Position(position.getRow(), position.getCol() - 1);
-    //Position toTheRight = Position(position.getRow(), position.getCol() + 1);
-    //Position behind = Position(isWhite ? position.getRow() + 1 : position.getRow() - 1, position.getCol());
-    //Position pos = board.getLastDoubleStepPawn();
-
-    //if (toTheLeft == board.getlastDoubleStepPawn || toTheRight == board.lastDoubleStepPawn)
-    //{
-    //    Move enPassantMove(position, behind);
-    //    enPassantMove.setEnPassant();
-    //    possible.insert(enPassantMove);
-    //}
-
+    // En-passant
+    if (!board.getMoveHistory().empty()) {
+        // Check if the move meets the conditions for en passant
+        const Move& lastMove = board.getLastMove();
+        if (board[lastMove.getDes()].getPieceType() == PAWN &&
+            abs(lastMove.getDes().getCol() - col) == 1 &&
+            abs(lastMove.getDes().getRow() == row &&
+            abs(lastMove.getSrc().getRow() - row) == 2))
+        {
+            // Add en passant move to the possible set
+            possible.insert(Move(position, Position(row + direction, lastMove.getDes().getCol())));
+        }
+    }
 }
-
-
-    //// En-passant
-    //if ((isWhite && row == 3) || (!isWhite && row == 4)) {
-    //    // Check for en passant condition to the left and right of the pawn
-    //    for (int newCol : {col - 1, col + 1}) {
-    //        if (newCol >= 0 && newCol < 8) {
-    //            const Move& lastMove = board.getLastMove(); // Assume you have this method
-    //            const Position lastEndPos = lastMove.getEndPosition();
-    //            if (lastEndPos.getRow() == row && lastEndPos.getCol() == newCol) {
-    //                const Piece& adjacentPawn = board[lastEndPos];
-    //                // Check if the adjacent piece moved two squares
-    //                if (abs(lastMove.getStartRow() - lastEndPos.getRow()) == 2 &&
-    //                    adjacentPawn.getPieceType() == PAWN && adjacentPawn.getIsWhite() != isWhite) {
-    //                    // En Passant capture move
-    //                    possible.insert(Move(position, Position(row + direction, newCol))); // Adjust as needed
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
 
 void Pawn::display(ogstream* pgout) const {
     pgout->drawPawn(position.getLocation(), isWhite);
