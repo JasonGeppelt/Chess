@@ -68,28 +68,28 @@ void Board::reset(bool fFree)
     // pawns
     for (int c = 0; c < 8; c++)
     {
-        board[1][c] = pawnFactory(1, c, true);
-        board[6][c] = pawnFactory(6, c, false);
+        board[1][c] = pawnFactory(1, c, false);
+        board[6][c] = pawnFactory(6, c, true);
     }
 
+    // black
+    board[0][0] = new Rook(0, 0, false);
+    board[0][1] = new Knight(0, 1, false);
+    board[0][2] = new Bishop(0, 2, false);
+    board[0][3] = new Queen(0, 3, false);
+    board[0][4] = new King(0, 4, false);
+    board[0][5] = new Bishop(0, 5, false);
+    board[0][6] = new Knight(0, 6, false);
+    board[0][7] = new Rook(0, 7, false);
     // white
-    board[0][0] = new Rook(0, 0, true);
-    board[0][1] = new Knight(0, 1, true);
-    board[0][2] = new Bishop(0, 2, true);
-    board[0][3] = new Queen(0, 3, true);
-    board[0][4] = new King(0, 4, true);
-    board[0][5] = new Bishop(0, 5, true);
-    board[0][6] = new Knight(0, 6, true);
-    board[0][7] = new Rook(0, 7, true);
-    // Black
-    board[7][0] = new Rook(7, 0, false);
-    board[7][1] = new Knight(7, 1, false);
-    board[7][2] = new Bishop(7, 2, false);
-    board[7][3] = new Queen(7, 3, false);
-    board[7][4] = new King(7, 4, false);
-    board[7][5] = new Bishop(7, 5, false);
-    board[7][6] = new Knight(7, 6, false);
-    board[7][7] = new Rook(7, 7, false);
+    board[7][0] = new Rook(7, 0, true);
+    board[7][1] = new Knight(7, 1, true);
+    board[7][2] = new Bishop(7, 2, true);
+    board[7][3] = new Queen(7, 3, true);
+    board[7][4] = new King(7, 4, true);
+    board[7][5] = new Bishop(7, 5, true);
+    board[7][6] = new Knight(7, 6, true);
+    board[7][7] = new Rook(7, 7, true);
 
     // reset the moves
     currentMove = 0;
@@ -261,16 +261,8 @@ bool Board::move(const Move& move)
     assert(src.isValid());
     assert(des.isValid());
 
-    // DEBUG
-    if (move.getWhiteMove()) {
-        cout << "WHITE'S TURN" << endl;
-    }
-    else {
-        cout << "BLACK'S TURN" << endl;
-    }
-
     // Not your turn
-    if (move.getWhiteMove() != board[src.getRow()][src.getCol()]->getIsWhite()) {
+    if (whiteTurn() != board[src.getRow()][src.getCol()]->getIsWhite()) {
         return false;
     }
 
@@ -303,6 +295,9 @@ bool Board::move(const Move& move)
         des.set(row, 7);
         swap(src, des);
         
+        // DEBUG 
+        cout << "King Side Castle" << endl;
+
         moveOccurred = true;
     }
 
@@ -327,6 +322,9 @@ bool Board::move(const Move& move)
         src.set(row, 3);
         des.set(row, 0);
         swap(src, des);
+
+        // DEBUG 
+        cout << "Queen Side Castle" << endl;
         
         moveOccurred = true;
     }
@@ -346,41 +344,48 @@ bool Board::move(const Move& move)
         // kill the opponent
         Position posKill(src.getRow(), des.getCol());
         *this -= posKill;
+
+        // DEBUG 
+        cout << "En-passant" << endl;
         
         moveOccurred = true;
     }
 
     // promotion?
-    else if (move.getPromotion() != SPACE)
-    {
-        assert(board[src.getRow()][src.getCol()]->getLetter() == 'p');
-        assert(move.getPromotion() == 'Q' || move.getPromotion() == 'R' ||
-            move.getPromotion() == 'B' || move.getPromotion() == 'N');
-        *this -= src;
-        remove(des);
-        assert(board[des.getRow()][des.getCol()] == NULL);
+    else if (move.getPromotion() != SPACE) {
+        // Replace pawn with new piece at destination based on promotion
+        Position dest = move.getDes();
+        bool isWhite = move.getWhiteMove();
+        Piece* promotedPiece = nullptr;
 
-        switch (move.getPromotion())
-        {
-        case 'Q':
-            *this = new Queen(des.getRow(), des.getCol(), move.getWhiteMove());
+        switch (move.getPromotion()) {
+        case QUEEN:
+            promotedPiece = new Queen(dest.getRow(), dest.getCol(), isWhite);
             break;
-        case 'R':
-            *this = new Rook(des.getRow(), des.getCol(), move.getWhiteMove());
+        case ROOK:
+            promotedPiece = new Rook(dest.getRow(), dest.getCol(), isWhite);
             break;
-        case 'B':
-            *this = new Bishop(des.getRow(), des.getCol(), move.getWhiteMove());
+        case BISHOP:
+            promotedPiece = new Bishop(dest.getRow(), dest.getCol(), isWhite);
             break;
-        case 'N':
-            *this = new Knight(des.getRow(), des.getCol(), move.getWhiteMove());
+        case KNIGHT:
+            promotedPiece = new Knight(dest.getRow(), dest.getCol(), isWhite);
             break;
         default:
-            *this = new Pawn(des.getRow(), des.getCol(), move.getWhiteMove());
             assert(false);
-
+            break;
         }
-        assert(board[des.getRow()][des.getCol()] != NULL);
+
+        if (promotedPiece != nullptr) {
+            // Assuming board is a 2D array of Piece pointers
+            Position posKill(src.getRow(), des.getCol());
+            *this -= posKill;            
+            board[dest.getRow()][dest.getCol()] = promotedPiece; // Place the new piece
+        }
         
+        // DEBUG 
+        cout << "Promotion" << endl;
+
         moveOccurred = true;
     }
 
@@ -398,6 +403,9 @@ bool Board::move(const Move& move)
         // swap the piece
         swap(src, des);
         
+        // DEBUG 
+        cout << "Capture" << endl;
+
         moveOccurred = true;
     }
 
@@ -419,6 +427,7 @@ bool Board::move(const Move& move)
     // advance by one move
     if (moveOccurred) {
         currentMove++;
+        addMove(move);
     }
 
     return moveOccurred;

@@ -14,6 +14,7 @@
 #include "uiInteract.h"
 #include <iostream>
 #include <set>
+#include <vector>
 
 using namespace std;
 
@@ -55,6 +56,7 @@ public:
 	{
 		return *board[pos.getRow()][pos.getCol()];
 	}
+	Move getLastMove() const { return moves.back(); }
 
 	// setters
 	void free();
@@ -71,6 +73,7 @@ public:
 	void swap(const Position& pos1, const Position& pos2);
 	void setCurrentMove(int currentMove) { this->currentMove = currentMove; }
 	static Piece* pawnFactory(int row, int col, bool isWhite);
+	void addMove(const Move& move) { moves.push_back(move);	}
 
 protected:
 	void assertBoard();
@@ -78,6 +81,7 @@ protected:
 	Piece* board[8][8]; // the board of chess pieces
 	int currentMove;    // the current move number we are on
 	ogstream* pgout;     // the output stream
+	vector<Move> moves;
 };
 
 

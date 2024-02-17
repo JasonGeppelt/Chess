@@ -26,12 +26,10 @@ class Move
   public:
       friend MoveTest;
 
-      // constructor
-      Move(); 
-      Move(const Position& src, const Position& dest);
-      Move(const Move & rhs)           { *this = rhs;      }
-      Move(const char * s)             { *this = s;        }
-
+      Move(); // Default constructor
+      Move(const Position& src, const Position& dest, PieceType promote = SPACE);
+      Move(const Move& rhs) { *this = rhs; }
+      Move(const char* s) { *this = s; }
 
       // getters
       string getText()           const;

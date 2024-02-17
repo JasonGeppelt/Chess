@@ -6,8 +6,8 @@
 #include "uiInteract.h"
 #include "uiDraw.h"
 #include "pieceType.h"
-#include "board.h"
 #include "piece.h"
+#include "board.h"
 #include "position.h"
 #include "move.h"
 
@@ -23,21 +23,11 @@ void callBack(Interface* pUI, void* p)
     Move moveAttempt = Move(source, destination);
     moveAttempt.complete(*board);
 
-    // DEBUG
-    //cout << source.getLocation() << " ," << destination.getLocation() << endl;
-
     if (source.getLocation() != -1 && board->move(moveAttempt)) {
         pUI->clearSelectPosition(); 
     }
-    else if (source.getLocation() == -1) {
-
-        // DEBUG
-        //cout << (*board)[source].getLetter() << endl;
-        //if ((*board)[source].getPieceType() == ROOK) {
-        //    cout << "ITS A ROOK WHAT THE HECK" << endl;
-        //}
-
-        (*board)[source].getMoves(possible, *board);
+    else if (destination.getLocation() != -1) {
+        (*board)[destination].getMoves(possible, *board);
     }
 
     // if we clicked on a blank spot, unselect it
@@ -56,6 +46,11 @@ int main(int argc, char** argv)
 
     Board board(&pgout);
     board.reset(true);
+
+    // DEBUG
+    //else if (board[source].getPieceType() == KING) {
+    //    cout << "THATS A KING" << endl;
+    //}
 
     ui.run(callBack, &board);
 

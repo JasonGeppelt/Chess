@@ -60,7 +60,7 @@ char Piece::getLetter() const {
     case PAWN:
         return isWhite ? 'P' : 'p';
     default:
-        return '?';
+        return ' ';
     }
 }
 
@@ -117,18 +117,37 @@ bool Piece::operator!=(const Piece& other) const {
  * Includes definitions for Space, King, Queen, Rook, Bishop,
  * Knight, and Pawn classes.
  **************************************************************/
-// SPACE
+
+ /**************************************
+  * SPACE
+  **************************************/
 Space::Space(int row, int col) : Piece(PieceType::SPACE, false, row, col) {}
 
 void Space::getMoves(set<Move>& possible, const Board& board) const {} // Space has no moves
-
 void Space::display(ogstream* pgout) const {} // Space has no graphic
 
 // KING
 King::King(int row, int col, bool isWhite) : Piece(KING, isWhite, row, col) {}
 
 void King::getMoves(set<Move>& possible, const Board& board) const {
-    // Logic to calculate possible moves for the king
+    static const vector<pair<int, int>> kingMoves = {
+        {0, 1}, {1, 0}, {1, 1},
+        {0, -1}, {-1, 0}, {-1, -1},
+        {1, -1}, {-1, 1}
+    };
+    int row = position.getRow();
+    int col = position.getCol();
+
+    for (const auto& move : kingMoves) {
+        int newRow = row + move.first;
+        int newCol = col + move.second;
+        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            const Piece* targetPiece = &board[Position(newRow, newCol)];
+            if (targetPiece->getLetter() == ' ' || targetPiece->getIsWhite() != isWhite) {
+                possible.insert(Move(position, Position(newRow, newCol)));
+            }
+        }
+    }
 }
 
 void King::display(ogstream* pgout) const {
@@ -139,7 +158,28 @@ void King::display(ogstream* pgout) const {
 Queen::Queen(int row, int col, bool isWhite) : Piece(QUEEN, isWhite, row, col) {}
 
 void Queen::getMoves(set<Move>& possible, const Board& board) const {
-    // Logic to calculate possible moves for the queen
+    // Combine Rook and Bishop directions
+    vector<pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+    int row = position.getRow(), col = position.getCol();
+
+    for (const auto& dir : directions) {
+        int nextRow = row, nextCol = col;
+        while (true) {
+            nextRow += dir.first;
+            nextCol += dir.second;
+            if (nextRow < 0 || nextRow >= 8 || nextCol < 0 || nextCol >= 8) break;
+            const Piece& target = board[Position(nextRow, nextCol)];
+            if (target.getPieceType() == SPACE) {
+                possible.insert(Move(position, Position(nextRow, nextCol)));
+            }
+            else {
+                if (target.getIsWhite() != isWhite) {
+                    possible.insert(Move(position, Position(nextRow, nextCol)));
+                }
+                break;
+            }
+        }
+    }
 }
 
 void Queen::display(ogstream* pgout) const {
@@ -150,7 +190,28 @@ void Queen::display(ogstream* pgout) const {
 Rook::Rook(int row, int col, bool isWhite) : Piece(ROOK, isWhite, row, col) {}
 
 void Rook::getMoves(set<Move>& possible, const Board& board) const {
-    // Logic to calculate possible moves for the rook
+    // Directions: up, down, left, right
+    vector<pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    int row = position.getRow(), col = position.getCol();
+
+    for (const auto& dir : directions) {
+        int nextRow = row, nextCol = col;
+        while (true) {
+            nextRow += dir.first;
+            nextCol += dir.second;
+            if (nextRow < 0 || nextRow >= 8 || nextCol < 0 || nextCol >= 8) break; // Out of bounds
+            const Piece& target = board[Position(nextRow, nextCol)];
+            if (target.getPieceType() == SPACE) { // Empty space
+                possible.insert(Move(position, Position(nextRow, nextCol)));
+            }
+            else {
+                if (target.getIsWhite() != isWhite) { // Capture
+                    possible.insert(Move(position, Position(nextRow, nextCol)));
+                }
+                break; // Blocked by a piece
+            }
+        }
+    }
 }
 
 void Rook::display(ogstream* pgout) const {
@@ -161,7 +222,28 @@ void Rook::display(ogstream* pgout) const {
 Bishop::Bishop(int row, int col, bool isWhite) : Piece(BISHOP, isWhite, row, col) {}
 
 void Bishop::getMoves(set<Move>& possible, const Board& board) const {
-    // Logic to calculate possible moves for the bishop
+    // Directions: diagonals
+    vector<pair<int, int>> directions = { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+    int row = position.getRow(), col = position.getCol();
+
+    for (const auto& dir : directions) {
+        int nextRow = row, nextCol = col;
+        while (true) {
+            nextRow += dir.first;
+            nextCol += dir.second;
+            if (nextRow < 0 || nextRow >= 8 || nextCol < 0 || nextCol >= 8) break;
+            const Piece& target = board[Position(nextRow, nextCol)];
+            if (target.getPieceType() == SPACE) {
+                possible.insert(Move(position, Position(nextRow, nextCol)));
+            }
+            else {
+                if (target.getIsWhite() != isWhite) {
+                    possible.insert(Move(position, Position(nextRow, nextCol)));
+                }
+                break;
+            }
+        }
+    }
 }
 
 void Bishop::display(ogstream* pgout) const {
@@ -208,8 +290,56 @@ void Knight::display(ogstream* pgout) const {
 Pawn::Pawn(int row, int col, bool isWhite) : Piece(PAWN, isWhite, row, col) {}
 
 void Pawn::getMoves(set<Move>& possible, const Board& board) const {
-    // Logic to calculate possible moves for the pawn
+    int direction = isWhite ? -1 : 1; // Adjust direction based on pawn color
+    int startRow = isWhite ? 6 : 1; // Starting rows differ based on color
+    int row = position.getRow();
+    int col = position.getCol();
+
+    // Forward one space
+    if (board[Position(row + direction, col)].getPieceType() == SPACE) {
+        possible.insert(Move(position, Position(row + direction, col)));
+        // Double move from start position
+        if (row == startRow && board[Position(row + 2 * direction, col)].getPieceType() == SPACE) {
+            possible.insert(Move(position, Position(row + 2 * direction, col)));
+        }
+    }
+
+    //// En passant capture to the left or right
+    //Position toTheLeft = Position(position.getRow(), position.getCol() - 1);
+    //Position toTheRight = Position(position.getRow(), position.getCol() + 1);
+    //Position behind = Position(isWhite ? position.getRow() + 1 : position.getRow() - 1, position.getCol());
+    //Position pos = board.getLastDoubleStepPawn();
+
+    //if (toTheLeft == board.getlastDoubleStepPawn || toTheRight == board.lastDoubleStepPawn)
+    //{
+    //    Move enPassantMove(position, behind);
+    //    enPassantMove.setEnPassant();
+    //    possible.insert(enPassantMove);
+    //}
+
 }
+
+
+    //// En-passant
+    //if ((isWhite && row == 3) || (!isWhite && row == 4)) {
+    //    // Check for en passant condition to the left and right of the pawn
+    //    for (int newCol : {col - 1, col + 1}) {
+    //        if (newCol >= 0 && newCol < 8) {
+    //            const Move& lastMove = board.getLastMove(); // Assume you have this method
+    //            const Position lastEndPos = lastMove.getEndPosition();
+    //            if (lastEndPos.getRow() == row && lastEndPos.getCol() == newCol) {
+    //                const Piece& adjacentPawn = board[lastEndPos];
+    //                // Check if the adjacent piece moved two squares
+    //                if (abs(lastMove.getStartRow() - lastEndPos.getRow()) == 2 &&
+    //                    adjacentPawn.getPieceType() == PAWN && adjacentPawn.getIsWhite() != isWhite) {
+    //                    // En Passant capture move
+    //                    possible.insert(Move(position, Position(row + direction, newCol))); // Adjust as needed
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+
 
 void Pawn::display(ogstream* pgout) const {
     pgout->drawPawn(position.getLocation(), isWhite);

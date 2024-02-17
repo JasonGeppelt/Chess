@@ -29,11 +29,9 @@ Move::Move() :
  * MOVE : PARAMETER CONSTRUCTOR
  * Constructor with source and destination positions
  ***************************************************/
-Move::Move(const Position& src, const Position& dest) :
-    source(src), dest(dest), promote(SPACE), capture(SPACE),
-    enpassant(false), castleK(false), castleQ(false), isWhiteTurn(true)
-{
-}
+Move::Move(const Position& src, const Position& dest, PieceType promote) :
+    source(src), dest(dest), promote(promote), capture(SPACE), enpassant(false),
+    castleK(false), castleQ(false), isWhiteTurn(true) {}
 
 /***********************************************
  * MOVE : COMPLETE
@@ -47,6 +45,17 @@ void Move::complete(const Board& board)
 
    // set the color
    isWhiteTurn = board[source].getIsWhite();
+
+   // handle if this is a ppromotion
+   if (board[source].getPieceType() == PAWN)
+   {
+       // For white pawns reaching the 8th rank or black pawns reaching the 1st rank
+       if ((isWhiteTurn && dest.getRow() == 0) || (!isWhiteTurn && dest.getRow() == 7))
+       {
+           // Set promotion to QUEEN by default
+           promote = QUEEN;
+       }
+   }
 
    // handle if this is an en-passant
    //if (capture == SPACE && board[source].getPieceType() == PAWN)
